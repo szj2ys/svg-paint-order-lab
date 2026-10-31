@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" /><meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  />
+  <title>SVG Paint Order Lab</title>
+  <style>
+    body {
+      font:
+        17px/1.55 system-ui,
+        sans-serif;
+      margin: 0;
+      background: #f5f3ef;
+      color: #20363b;
+    }
+    main {
+      max-width: 1000px;
+      margin: auto;
+      padding: 28px;
+    }
+    h1 {
+      font-size: clamp(30px, 5vw, 52px);
+      line-height: 1.1;
+    }
+    h2 {
+      font-size: 21px;
+    }
+    a {
+      color: #066573;
+    }
+    button {
+      font: inherit;
+      background: #086b78;
+      color: white;
+      border: 0;
+      border-radius: 6px;
+      padding: 12px 18px;
+      cursor: pointer;
+    }
+    button:disabled {
+      opacity: 0.6;
+    }
+    button:focus-visible,
+    a:focus-visible {
+      outline: 3px solid #b24224;
+      outline-offset: 4px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    figure {
+      margin: 0;
+      padding: 16px;
+      background: white;
+      border: 1px solid #bbb;
+      border-radius: 8px;
+    }
+    img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border: 1px solid #b9c5c7;
+    }
+    pre {
+      overflow: auto;
+      font-size: 12px;
+      white-space: pre-wrap;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      background: white;
+    }
+    td,
+    th {
+      border-bottom: 1px solid #aaa;
+      text-align: left;
+      padding: 10px;
+    }
+    small {
+      display: block;
+      margin-top: 18px;
+    }
+    #status {
+      min-height: 28px;
+    }
+    .intro {
+      max-width: 800px;
+    }
+  </style>
+  <main>
+    <p>AN OPEN, OFFLINE ILLUSTRATION EXERCISE</p>
+    <h1>Two colors. Three passes.</h1>
+    <p class="intro">
+      Changing the order of same-colored SVG shapes can remove a detail. Inspect
+      the four files below, then compare their pixels in your browser. No
+      account, upload, server, or library is needed.
+    </p>
+    <div id="examples" class="grid"></div>
+    <h2>Test the visual consequence</h2>
+    <p>
+      Render all examples at 300 × 180 pixels using this browser's SVG renderer.
+      Count pixels whose RGBA values differ from the original; fully transparent
+      pixels are normalized to zero RGB before comparison.
+    </p>
+    <button id="compare" type="button">Compare rendered pixels</button>
+    <p id="status" role="status" aria-live="polite">Ready to compare.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Variant</th>
+          <th>Different pixels</th>
+          <th>Interpretation</th>
+        </tr>
+      </thead>
+      <tbody id="results"></tbody>
+    </table>
+    <h2>Try it yourself</h2>
+    <ol>
+      <li>Download the original and the two broken examples.</li>
+      <li>Open their markup in a text editor. Only the shape order changes.</li>
+      <li>
+        Open them in a browser or vector editor and find the missing detail.
+      </li>
+      <li>
+        Keep the original canvas and shape sequence when exporting separate
+        files. Reassemble and compare before trusting an export.
+      </li>
+    </ol>
+    <p>
+      This fixture illustrates a specific overlap. It does not prove that every
+      repeated color always needs another pass. Non-overlapping shapes may be
+      combined safely after checking geometry. This is not a general SVG parser,
+      production separator, cutter test or registration tool.
+    </p>
+    <p>
+      The
+      <a href="https://www.w3.org/TR/SVG2/render.html#RenderingOrder"
+        >W3C rendering model</a
+      >
+      explains document painting order. An optional practical application is
+      <a href="https://pic2svg.com/split-svg-by-color/"
+        >Pic2SVG's local solid-fill splitter</a
+      >. This lab was prepared on behalf of Pic2SVG; using that service is not
+      required to run any exercise here.
+    </p>
+    <small
+      >MIT-licensed original tutorial files. That license does not change
+      Pic2SVG's service terms or its output licensing. Browser pixel results are
+      not cross-renderer or physical-manufacturing guarantees.</small
+    >
+  </main>
+  <script>
+    const fixtures = [
+      [
+        "original",
+        "Original: white, teal, white",
+        '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="180" viewBox="0 0 300 180">\n<rect width="300" height="180" fill="#ffffff"/>\n<rect x="40" y="40" width="220" height="100" rx="12" fill="#087f8c"/>\n<circle cx="80" cy="90" r="15" fill="#ffffff"/>\n</svg>\n',
+        "The white detail sits above the teal tag.",
+      ],
+      [
+        "white-first",
+        "All white below teal",
+        '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="180" viewBox="0 0 300 180">\n<rect width="300" height="180" fill="#ffffff"/>\n<circle cx="80" cy="90" r="15" fill="#ffffff"/>\n<rect x="40" y="40" width="220" height="100" rx="12" fill="#087f8c"/>\n</svg>\n',
+        "Grouping both white shapes below teal hides the circular detail.",
+      ],
+      [
+        "white-last",
+        "All white above teal",
+        '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="180" viewBox="0 0 300 180">\n<rect x="40" y="40" width="220" height="100" rx="12" fill="#087f8c"/>\n<rect width="300" height="180" fill="#ffffff"/>\n<circle cx="80" cy="90" r="15" fill="#ffffff"/>\n</svg>\n',
+        "Grouping both white shapes above teal covers the entire tag.",
+      ],
+      [
+        "ordered-passes",
+        "Three ordered passes",
+        '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="180" viewBox="0 0 300 180">\n<g><rect width="300" height="180" fill="#ffffff"/></g>\n<g><rect x="40" y="40" width="220" height="100" rx="12" fill="#087f8c"/></g>\n<g><circle cx="80" cy="90" r="15" fill="#ffffff"/></g>\n</svg>\n',
+        "Three consecutive passes preserve the example. Two colors do not imply two safe passes.",
+      ],
+    ];
+    const imageLoads = [];
+    for (const [key, title, source, description] of fixtures) {
+      const figure = document.createElement("figure");
+      const heading = document.createElement("h2");
+      heading.textContent = title;
+      const image = document.createElement("img");
+      image.width = 300;
+      image.height = 180;
+      image.alt = description;
+      const blob = new Blob([source], { type: "image/svg+xml" });
+      const url = URL.createObjectURL(blob);
+      image.src = url;
+      const loaded = new Promise((resolve, reject) => {
+        image.onload = () => resolve(image);
+        image.onerror = () => reject(new Error("Could not decode " + key));
+      });
+      imageLoads.push(loaded);
+      const text = document.createElement("p");
+      text.textContent = description;
+      const download = document.createElement("a");
+      download.href = url;
+      download.download = key + ".svg";
+      download.textContent = "Download " + key + ".svg";
+      const details = document.createElement("details");
+      const summary = document.createElement("summary");
+      summary.textContent = "Read the SVG";
+      const code = document.createElement("pre");
+      code.textContent = source;
+      details.append(summary, code);
+      figure.append(heading, image, text, download, details);
+      document.querySelector("#examples").append(figure);
+    }
+    function pixels(image) {
+      const canvas = document.createElement("canvas");
+      canvas.width = 300;
+      canvas.height = 180;
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      ctx.clearRect(0, 0, 300, 180);
+      ctx.drawImage(image, 0, 0, 300, 180);
+      return ctx.getImageData(0, 0, 300, 180).data;
+    }
+    function difference(a, b) {
+      let count = 0;
+      for (let i = 0; i < a.length; i += 4) {
+        let mismatch = a[i + 3] !== b[i + 3];
+        for (let j = 0; j < 3; j++) {
+          const av = a[i + 3] === 0 ? 0 : a[i + j];
+          const bv = b[i + 3] === 0 ? 0 : b[i + j];
+          if (av !== bv) mismatch = true;
+        }
+        if (mismatch) count++;
+      }
+      return count;
+    }
+    document.querySelector("#compare").addEventListener("click", async () => {
+      const button = document.querySelector("#compare");
+      button.disabled = true;
+      document.querySelector("#status").textContent =
+        "Decoding and comparing the four examples…";
+      try {
+        const images = await Promise.all(imageLoads);
+        const original = pixels(images[0]);
+        const results = images.map((image, i) => ({
+          key: fixtures[i][0],
+          changedPixels: difference(original, pixels(image)),
+        }));
+        document.querySelector("#results").replaceChildren();
+        for (const result of results) {
+          const tr = document.createElement("tr");
+          for (const text of [
+            result.key,
+            String(result.changedPixels),
+            result.changedPixels === 0
+              ? "Same rendering at this size"
+              : "Different rendering",
+          ]) {
+            const td = document.createElement("td");
+            td.textContent = text;
+            tr.append(td);
+          }
+          document.querySelector("#results").append(tr);
+        }
+        window.lastComparison = results;
+        document.querySelector("#status").textContent =
+          "Comparison complete: " +
+          results.filter((x) => x.changedPixels > 0).length +
+          " variants differ from the original.";
+      } catch (error) {
+        document.querySelector("#status").textContent =
+          "Comparison failed: " + error.message;
+      } finally {
+        button.disabled = false;
+      }
+    });
+  </script>
+</html>
